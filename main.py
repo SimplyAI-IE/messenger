@@ -82,3 +82,37 @@ async def send_whatsapp(msg: WhatsAppMessage):
         logging.error(f"Failed to send WhatsApp message: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))  # SHOW Twilio's error message
 
+class CallbackRequest(BaseModel):
+    user_name: str
+    user_phone: Annotated[str, Field(pattern=r"^\+\d{10,15}$")]
+
+@app.post("/request-callback", summary="Trigger a WhatsApp Callback Request")
+async def request_callback(req: CallbackRequest):
+    """
+    Sends a structured WhatsApp message to hotel staff indicating a callback request.
+    """
+    twilio_client = get_twilio_client()
+    from_whatsapp = os.getenv("TWILIO_WHATSAPP_FROM")
+    staff_number = os.getenv("WHATSAPP_CALLBACK_TARGET")
+
+    if not from_whatsapp or not staff_number:
+        raise HTTPException(status_code=500, detail="Callback configuration missing in environment.")
+
+    message_body = (
+        f"📞 *Callback Request*\n\n"
+        f"Name: {req.user_name}\n"
+        f"Phone: {req.user_phone}\n"
+        f"Requested a callback via the concierge assistant."
+    )
+
+    try:
+        logging.info(f"Sending callback notification to staff at {staff_number}")
+        message = twilio_client.messages.create(
+            body=message_body,
+            from_=from_whatsapp,
+            to=f"whatsapp:{staff_number}"
+        )
+        return {"status": "callback_requested", "sid": message.sid}
+    except Exception as e:
+        logging.error(f"Callback request failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
