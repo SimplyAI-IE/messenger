@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*.env
+.env
+.venv/
+venv/
+
+# VSCode
+.vscode/
+.history/
+
+# Docker & Cache
+.docker/
+.cache/
+*.tar
+*.log
+
+# System
+.DS_Store
+Thumbs.db
